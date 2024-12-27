@@ -2,166 +2,102 @@ package main
 
 import (
 	"bufio"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"flag"
 	"fmt"
-	"io"
 	"os"
+	"strconv"
 	"strings"
+	"therekrab/secrets/client"
+	"therekrab/secrets/errorhandling"
+	"therekrab/secrets/server"
 )
 
-func loadBytes(file io.Reader) (bytes []byte) {
-    _, err := file.Read(bytes)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "error reading from file: %s\n", err)
-        os.Exit(1)
-    }
-    return
-}
-
-func buildAesGCM(key []byte) (aesGCM cipher.AEAD, err error){
-    block, err := aes.NewCipher(key)
-    if err != nil {
-        return nil, err
-    }
-    aesGCM, err = cipher.NewGCM(block)
-    if err != nil {
-        return nil, err
-    }
-    return
-}
-
-func genKey(key string) (validKey []byte) {
-    if len(key) >= 32 {
-        validKey = []byte(key[:32])
-        return
-    }
-    return genKey(key + key)
-}
-
-func encryptFile(aesGCM cipher.AEAD, filepath string) (err error) {
-    // open the input file for reading
-    file, err := os.Open(filepath)
-    if err != nil {
-        return err
-    }
-    defer file.Close()
-    // load the bytes that we need to encrypt.
-    data, err := io.ReadAll(file)
-    if err != nil {
-        return err
-    }
-    // Generate a nonce
-    nonce := make([]byte, 12)
-    if _, err := rand.Read(nonce); err != nil {
-        return err
-    }
-    // actually do some encrypting.
-    encrypted := aesGCM.Seal(nil, nonce, data, nil)
-    // open the output file
-    outputFilepath := filepath + ".secret"
-    outputFile, err := os.Create(outputFilepath)
-    if err != nil {
-        return err 
-    }
-    defer outputFile.Close()
-    // save the nonce and encrypted data to the output file.
-    // For this implementation, we simply write the nonce,
-    // then append all the encrypted bytes.
-    allData := append(nonce, encrypted...)
-    if _, err = outputFile.Write(allData); err != nil {
-        return err
-    }
-    return
-}
-
-func decryptFile(aesGCM cipher.AEAD, filepath string) (err error) {
-    // open the input data
-    file, err := os.Open(filepath)
-    if err != nil {
-        return err
-    }
-    defer file.Close()
-    // load the encrypted data (and the nonce)
-    nonce := make([]byte, 12)
-    if _, err := file.Read(nonce); err != nil {
-        return err
-    }
-    encrypedData, err := io.ReadAll(file)
-    if err != nil {
-        return err
-    }
-    // now decrypt it!
-    data, err := aesGCM.Open(nil, nonce, encrypedData, nil)
-    if err != nil {
-        return err
-    }
-    // write data to output file
-    outputFilepath := strings.TrimSuffix(filepath, ".secret")
-    outputFile, err := os.Create(outputFilepath)
-    if err != nil {
-        return err
-    }
-    defer outputFile.Close()
-    if _, err = outputFile.Write(data); err != nil {
-        return err
-    }
-    return
-}
-
 func main() {
-    var decryptFlag bool
-    flag.BoolVar(&decryptFlag, "u", false, "enables decryption")
+    port := flag.Uint("port", 4040, 
+        "(server mode) Port to run server on.",
+    )
+    serverFlag := flag.Bool("server", false, 
+        "Toggle server mode.",
+    )
+    newFlag := flag.Bool("new", false,
+        "(client mode) Create a new session, rather than connecting to a prexisting one.",
+    )
+    addr := flag.String("addr", "127.0.0.1:4040",
+        "(client mode) The server address to connect to.",
+    )
+    // Parse the flags
     flag.Parse()
-
-    filepaths := flag.Args()
-    if len(filepaths) == 0 {
-        fmt.Fprintln(os.Stderr, "no filepaths supplied!")
-        os.Exit(2)
-    }
-    // get the password
-    fmt.Print("Enter password: ")
-    
-    rdr := bufio.NewReader(os.Stdin)
-    passwd, err := rdr.ReadString('\n')
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "error reading from stdin: %s\n", err)
-        os.Exit(1)
-    }
-    key := genKey(strings.TrimSpace(passwd))
-    // Build the AES-GCM cipher
-    aesGCM, err := buildAesGCM(key)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "error building AES-GCM: %s\n", err)
-        os.Exit(1)
-    }
-    if decryptFlag {
-        // encryption mode
-        for _, filepath := range filepaths {
-            if err = decryptFile(aesGCM, filepath); err != nil {
-                fmt.Fprintf(
-                    os.Stderr,
-                    "error decrypting %s: %s\n",
-                    filepath,
-                    err)
-                } else {
-                    fmt.Printf("successfully decrypted %s\n", filepath)
-                }
-            }
+    var sessionIDHex string
+    var ident string
+    var sessionKey string
+    // Determine functionality
+    if *serverFlag {
+        server.RunServer(*port)
     } else {
-        // decryption mode
-        for _, filepath := range filepaths {
-            if err = encryptFile(aesGCM, filepath); err != nil {
-                fmt.Fprintf(
-                    os.Stderr,
-                    "error encrypting %s: %s\n",
-                    filepath,
-                    err)
-            } else {
-                fmt.Printf("successfully encrypted %s\n", filepath)
+        readInput(&sessionKey, "Session key: ")
+        readInput(&ident, "ident: ")
+        if *newFlag {
+            doNew(*addr, sessionKey, ident)
+        } else {
+            readInput(&sessionIDHex, "Session ID: ")
+            sessionID, err := parseSessionID(sessionIDHex)
+            if err != nil {
+                errorhandling.Report(err, true)
+                errorhandling.Exit()
             }
+            doJoin(*addr, sessionID, sessionKey, ident)
         }
     }
+}
+
+func doNew(addr string, sessionKey string, ident string) {
+    cfg, err := client.NewSessionConfig(sessionKey, ident)
+    if err != nil {
+        errorhandling.Report(err, true)
+        return
+    }
+    c := client.NewClient(addr, cfg)
+    err = c.Run(addr)
+    if err != nil {
+        // it's been reported, we just need to exit
+        os.Exit(1)
+    }
+}
+
+func doJoin(addr string, sessionID uint16, sessionKey string, ident string) {
+    fmt.Printf("Attempting to join session %x\n", sessionID)
+    cfg, err := client.JoinSessionConfig(sessionID, sessionKey, ident)
+    if err != nil {
+        errorhandling.Report(err, true)
+        return
+    }
+    c := client.NewClient(addr, cfg)
+    err = c.Run(addr)
+    if err != nil {
+        os.Exit(1)
+    }
+}
+
+func readInput(dst *string, msg string) {
+    fmt.Print(msg)
+    rdr := bufio.NewReader(os.Stdin)
+    res, err := rdr.ReadString('\n')
+    if err != nil {
+        err = fmt.Errorf("could not read from stdin")
+        errorhandling.Report(err, true)
+        errorhandling.Exit()
+    }
+    *dst = strings.TrimSpace(res)
+    if *dst == "" {
+        err = fmt.Errorf("blank input not allowed")
+        errorhandling.Report(err, true)
+        errorhandling.Exit()
+    }
+    return
+}
+
+func parseSessionID(sessionHex string) (sessionID uint16, err error) {
+    sessionIDBig, err :=  strconv.ParseUint(sessionHex, 16, 16)
+    sessionID = uint16(sessionIDBig)
+    return
 }

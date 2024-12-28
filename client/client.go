@@ -45,6 +45,7 @@ func (client *Client) isActive() bool {
 }
 
 func (client *Client) runInputLoop() {
+    defer client.Close()
     for client.isActive() {
         // get input from the user
         fmt.Print(">> ")
@@ -109,7 +110,9 @@ func (client *Client) identRoutine() (err error) {
 }
 
 func (client *Client) runOutputLoop() (err error) {
+    defer client.Close()
     for client.isActive() {
+        fmt.Println("listening for message")
         var msg message.Message
         msg, err = message.ReadMessage(client.conn)
         if err != nil {
@@ -130,7 +133,7 @@ func (client *Client) runOutputLoop() (err error) {
                 sender.SendError(client.conn)
                 return
             }
-            return
+            continue
         case message.CHT:
             var (
                 source []byte
@@ -143,7 +146,7 @@ func (client *Client) runOutputLoop() (err error) {
                 return
             }
             fmt.Printf("'%s' : %s\n", source, cht)
-            return
+            continue
         case message.CHTE:
             var (
                 source []byte
@@ -163,7 +166,7 @@ func (client *Client) runOutputLoop() (err error) {
                 return
             }
             fmt.Printf("'%s' : %s\n", source, string(cht))
-            return
+            continue
         }
         // invalid type received
         err = fmt.Errorf("invalid type received: %d", msg.MType())
@@ -174,9 +177,9 @@ func (client *Client) runOutputLoop() (err error) {
 }
 
 func (client *Client) runLoop() {
-    fmt.Printf("On session %x\n", client.cfg.sessionID)
     go client.runOutputLoop()
     client.runInputLoop()
+    errorhandling.Exit()
 }
 
 func (client *Client) Run(addr string) (err error) {
@@ -186,7 +189,6 @@ func (client *Client) Run(addr string) (err error) {
         return
     }
     client.active = true
-    defer client.Close()
     if client.cfg.join {
         // send a JOINR request
         err = sender.SendJoinR(
@@ -208,6 +210,7 @@ func (client *Client) Run(addr string) (err error) {
         }
         switch response.MType() {
         case message.ACC:
+            fmt.Printf("Joined session %x\n", client.cfg.sessionID)
             client.runLoop()
         case message.REJ:
             if response.Data()[0] == 0 {
@@ -238,6 +241,7 @@ func (client *Client) Run(addr string) (err error) {
         switch response.MType() {
         case message.NEW:
             client.cfg.sessionID = binary.BigEndian.Uint16(response.Data())
+            fmt.Printf("Created session %x\n", client.cfg.sessionID)
             client.runLoop()
             return
         }

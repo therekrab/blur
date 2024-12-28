@@ -36,7 +36,6 @@ func handleClient(conn net.Conn) {
         errorhandling.Report(err, false)
         return
     }
-    fmt.Println("finished firstrequest")
     // Now we have to ask for identification.
     ident, err := identRoutine(conn, sessionID)
     if err != nil {
@@ -51,7 +50,7 @@ func handleClient(conn net.Conn) {
     // Now we have "authenticated" the server.
     // Now the only MTYPEs that actually make sense are CHT(E) and IDENTR
     // We may now begin receiving standard communications
-    fmt.Println("finished init, ready for messages")
+    fmt.Printf("finished init for %s, ready for messages.\n", ident)
     for {
         msg, err := message.ReadMessage(conn)
         if err == io.EOF {

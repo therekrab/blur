@@ -35,13 +35,17 @@ func (smgr *sessionManager) broadcast(msg message.Message, exclude []byte) {
     for conn, ident := range smgr.clients {
         if slices.Equal(ident, exclude) {
             // this is probably the sender.
+            fmt.Printf("skipping bouncing message to %s\n", ident)
             continue
         }
+        fmt.Printf("smgr: sending to %s\n", ident)
         err := msg.SendTo(conn)
         if err != nil {
             addr := conn.LocalAddr().String()
-            err := fmt.Errorf("could not send data to %s: %s", addr, err)
+            err := fmt.Errorf("could not broadcast to %s: %s", addr, err)
             errorhandling.Report(err, false)
+            // we don't return, because one bad message shouldn't signal
+            // the end of all broadcasts
         }
     }
 }

@@ -27,6 +27,10 @@ func (smgr *sessionManager) removeClient(conn net.Conn) {
     delete(smgr.clients, conn)
 }
 
+func (smgr *sessionManager) isEmpty() bool {
+    return len(smgr.clients) == 0
+}
+
 func (smgr *sessionManager) broadcast(msg message.Message, exclude []byte) {
     for conn, ident := range smgr.clients {
         if slices.Equal(ident, exclude) {
@@ -43,8 +47,6 @@ func (smgr *sessionManager) broadcast(msg message.Message, exclude []byte) {
 }
 
 func (smgr *sessionManager) verify(sessionKeyHash []byte) bool {
-    fmt.Printf("ACTUAL hash: %x\n", smgr.sessionKeyHash)
-    fmt.Printf("GIVEN hash:  %x\n", sessionKeyHash)
     return slices.Equal(smgr.sessionKeyHash, sessionKeyHash)
 }
 

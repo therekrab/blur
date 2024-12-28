@@ -35,7 +35,11 @@ func (mgr *Manager) getSessionManager(sessionID uint16) *sessionManager {
     return &smgr
 }
 
-func (mgr *Manager) AddClient(sessionID uint16, ident []byte, conn net.Conn) {
+func (mgr *Manager) AddClient(
+    sessionID uint16,
+    ident []byte,
+    conn net.Conn,
+) {
     mgr.mu.Lock() // gotta be safe
     defer mgr.mu.Unlock() // gotta avoid dead locks
     smgr := mgr.getSessionManager(sessionID)
@@ -48,7 +52,11 @@ func (mgr *Manager) AddClient(sessionID uint16, ident []byte, conn net.Conn) {
     fmt.Printf("New client '%s' on session %x\n", ident, sessionID)
 }
 
-func (mgr *Manager) RemoveClient(sessionID uint16, conn net.Conn) {
+func (mgr *Manager) RemoveClient(
+    sessionID uint16,
+    ident []byte,
+    conn net.Conn,
+) {
     mgr.mu.Lock()
     defer mgr.mu.Unlock()
     smgr := mgr.getSessionManager(sessionID)
@@ -58,7 +66,11 @@ func (mgr *Manager) RemoveClient(sessionID uint16, conn net.Conn) {
         return
     }
     smgr.removeClient(conn)
-    fmt.Printf("Client left session %x\n", sessionID)
+    fmt.Printf("'%s' left session %x\n", ident, sessionID)
+    if smgr.isEmpty() {
+        delete(mgr.smgrs, sessionID)
+        fmt.Printf("Closed session %x.\n", sessionID)
+    }
 }
 
 func (mgr *Manager) Broadcast(

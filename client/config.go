@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/cipher"
-	"fmt"
 	"therekrab/secrets/secure"
 )
 
@@ -15,9 +14,7 @@ type ClientConfig struct {
 }
 
 func (cc *ClientConfig) HashedKey() []byte {
-    fmt.Printf("session key: '%s'\n", cc.key)
     hk := secure.Hash(cc.key)
-    fmt.Printf("hashed key: %x\n", hk)
     return hk
 }
 

@@ -29,7 +29,6 @@ func RunServer(port uint) (err error) {
 }
 
 func handleClient(conn net.Conn) {
-    defer fmt.Println("closing connection")
     defer conn.Close()
     // Read the first request
     sessionID, err := firstRequest(conn)
@@ -37,52 +36,28 @@ func handleClient(conn net.Conn) {
         errorhandling.Report(err, false)
         return
     }
+    fmt.Println("finished firstrequest")
     // Now we have to ask for identification.
-    if err = sender.SendIdentR(conn); err != nil {
-        errorhandling.Report(err, false)
-        sender.SendError(conn)
-        return
-    }
-    identMsg, err := message.ReadMessage(conn)
+    ident, err := identRoutine(conn, sessionID)
     if err != nil {
         errorhandling.Report(err, false)
-        sender.SendError(conn)
         return
     }
-    idents, err := message.ParseIdent(identMsg.Data())
-    if err != nil {
-        errorhandling.Report(err, false)
-        sender.SendError(conn)
-        return
-    }
-    if len(idents) != 1 {
-        err = fmt.Errorf("funny IDENTS: wanted 1, got %d", len(idents))
-        errorhandling.Report(err, false)
-        sender.SendError(conn)
-        return
-    }
-    ident := idents[0]
     // Let the manager know who's connected!
     manager.GetManager().AddClient(sessionID, ident, conn)
-    defer manager.GetManager().RemoveClient(sessionID, conn)
+    defer manager.GetManager().RemoveClient(sessionID, ident, conn)
     // When we leave, let everybody know
     defer leave(sessionID, ident)
-    // Tell everybody there's a new friend.
-    err = introduce(sessionID, ident)
-    if err != nil {
-        errorhandling.Report(err, false)
-        sender.SendError(conn)
-        return
-    }
     // Now we have "authenticated" the server.
-    // Now the only two MTYPEs that actually make sense are CHT and IDENTR
+    // Now the only MTYPEs that actually make sense are CHT(E) and IDENTR
     // We may now begin receiving standard communications
+    fmt.Println("finished init, ready for messages")
     for {
         msg, err := message.ReadMessage(conn)
         if err == io.EOF {
             fmt.Printf(
                 "connection terminated with %s\n",
-                conn.LocalAddr().String(),
+                ident,
             )
             return
         }
@@ -111,7 +86,6 @@ func firstRequest(conn net.Conn) (sessionID uint16, err error) {
         var sessionKeyHash []byte
         sessionID, sessionKeyHash = message.ParseJoin(msg.Data())
         // Ask mgr if we can enter
-        fmt.Printf("server.go:%x\n", sessionID)
         ok, keyFailed := manager.GetManager().Verify(sessionID, sessionKeyHash) 
         if ok {
             err = sender.SendAcc(conn)
@@ -160,12 +134,48 @@ func handleMessage(
         var ident []byte
         ident, err = manager.GetManager().GetIdent(sessionID, conn)
         if err != nil {
+            errorhandling.Report(err, false)
             return
         }
         alteredMsg := msg.PrependSource(ident)
         manager.GetManager().Broadcast(sessionID, alteredMsg, ident)
     case message.ERR:
         err = fmt.Errorf("ERR message received, exiting")
+    }
+    return
+}
+
+func identRoutine(conn net.Conn, sessionID uint16) (ident []byte, err error) {
+    if err = sender.SendIdentR(conn); err != nil {
+        errorhandling.Report(err, false)
+        sender.SendError(conn)
+        return
+    }
+    identMsg, err := message.ReadMessage(conn)
+    if err != nil {
+        errorhandling.Report(err, false)
+        sender.SendError(conn)
+        return
+    }
+    idents, err := message.ParseIdent(identMsg.Data())
+    if err != nil {
+        errorhandling.Report(err, false)
+        sender.SendError(conn)
+        return
+    }
+    if len(idents) != 1 {
+        err = fmt.Errorf("funny IDENTS: wanted 1, got %d", len(idents))
+        errorhandling.Report(err, false)
+        sender.SendError(conn)
+        return
+    }
+    ident = idents[0]
+    // Tell everybody there's a new friend.
+    err = introduce(sessionID, ident)
+    if err != nil {
+        errorhandling.Report(err, false)
+        sender.SendError(conn)
+        return
     }
     return
 }

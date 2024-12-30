@@ -8,6 +8,7 @@ import (
 	"therekrab/secrets/manager"
 	"therekrab/secrets/message"
 	"therekrab/secrets/sender"
+	"therekrab/secrets/ui"
 )
 
 func RunServer(port uint) (err error) {
@@ -17,7 +18,7 @@ func RunServer(port uint) (err error) {
         errorhandling.Report(err, true)
         return
     }
-    fmt.Printf("Server running on port %d\n", port)
+    ui.Out("Server running on port %d\n", port)
     for {
         conn, err := ln.Accept()
         if err != nil {
@@ -30,18 +31,23 @@ func RunServer(port uint) (err error) {
 
 func handleClient(conn net.Conn) {
     defer conn.Close()
+    connAddr := conn.LocalAddr().String()
+    ui.Log("[ %s ] Connected\n", connAddr)
+    defer ui.Log("[ %s ] Disconnected\n", connAddr)
     // Read the first request
     sessionID, err := firstRequest(conn)
     if err != nil {
         errorhandling.Report(err, false)
         return
     }
+    ui.Log("[ %s ] Attached to Session %x\n", connAddr, sessionID)
     // Now we have to ask for identification.
     ident, err := identRoutine(conn, sessionID)
     if err != nil {
         errorhandling.Report(err, false)
         return
     }
+    ui.Log("[ %s ] Identified as `%s`\n", connAddr, ident)
     // Let the manager know who's connected!
     manager.GetManager().AddClient(sessionID, ident, conn)
     defer manager.GetManager().RemoveClient(sessionID, ident, conn)
@@ -83,6 +89,7 @@ func firstRequest(conn net.Conn) (sessionID uint16, err error) {
         ok, keyFailed := manager.GetManager().Verify(sessionID, sessionKeyHash) 
         if ok {
             err = sender.SendAcc(conn)
+            ui.Log("[ %s ] Accepted to session\n", conn.LocalAddr().String())
         } else {
             if err = sender.SendReject(conn, keyFailed); err != nil {
                 errorhandling.Report(err, false)
@@ -98,6 +105,7 @@ func firstRequest(conn net.Conn) (sessionID uint16, err error) {
             return
         } 
         err = sender.SendNew(conn, sessionID)
+        ui.Log("[ %s ] Created new session\n", conn.LocalAddr().String())
         return
     }
     err = fmt.Errorf(

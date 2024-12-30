@@ -2,7 +2,6 @@ package sender
 
 import (
 	"encoding/binary"
-	"fmt"
 	"net"
 	"therekrab/secrets/errorhandling"
 	"therekrab/secrets/message"

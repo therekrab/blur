@@ -7,10 +7,12 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 	"sync"
 	"therekrab/secrets/errorhandling"
 	"therekrab/secrets/message"
 	"therekrab/secrets/sender"
+	"therekrab/secrets/ui"
 )
 
 type Client struct {
@@ -47,7 +49,7 @@ func (client *Client) runInputLoop() {
     defer client.Close()
     for client.isActive() {
         // get input from the user
-        fmt.Print(">> ")
+        ui.Out(">> ")
         rdr := bufio.NewReader(os.Stdin)
         line, err := rdr.ReadString('\n')
         // Check for ctrl-D EOF
@@ -59,6 +61,7 @@ func (client *Client) runInputLoop() {
             sender.SendError(client.conn)
             return
         }
+        line = strings.TrimSpace(line)
         // Build and send the chat
         encryptedData, err := client.cfg.encrypt(line)
         if err != nil {
@@ -99,11 +102,11 @@ func (client *Client) identRoutine() (err error) {
         return
     }
     
-    fmt.Println("=== ACTIVE USERS: ===")
+    ui.Out("=== ACTIVE USERS: ===\n")
     for _, reponseIdent := range reponseIdents {
-        fmt.Printf("\t'%s'\n", reponseIdent)
+        ui.Out("\t'%s'\n", reponseIdent)
     }
-    fmt.Println("===== END USERS =====")
+    ui.Out("===== END USERS =====\n")
     return
 }
 
@@ -144,7 +147,7 @@ func (client *Client) runOutputLoop() (err error) {
                 sender.SendError(client.conn)
                 return
             }
-            fmt.Printf("'%s' : %s\n", source, cht)
+            ui.Out("'%s' : %s\n", source, cht)
             continue
         case message.CHTE:
             var (
@@ -164,7 +167,7 @@ func (client *Client) runOutputLoop() (err error) {
                 sender.SendError(client.conn)
                 return
             }
-            fmt.Printf("'%s' : %s\n", source, string(cht))
+            ui.Out("'%s' : %s\n", source, string(cht))
             continue
         }
         // invalid type received
@@ -209,7 +212,7 @@ func (client *Client) Run(addr string) (err error) {
         }
         switch response.MType() {
         case message.ACC:
-            fmt.Printf("Joined session %x\n", client.cfg.sessionID)
+            ui.Out("Joined session %x\n", client.cfg.sessionID)
             client.runLoop()
         case message.REJ:
             if response.Data()[0] == 0 {
@@ -222,7 +225,6 @@ func (client *Client) Run(addr string) (err error) {
         }
         err = fmt.Errorf("invalid response received from server")
         errorhandling.Report(err, true)
-        return
     } else {
         err = sender.SendNewR(client.conn, client.cfg.HashedKey())
         if err != nil {
@@ -237,14 +239,14 @@ func (client *Client) Run(addr string) (err error) {
             sender.SendError(client.conn)
             return
         }
-        switch response.MType() {
-        case message.NEW:
+        if response.MType() == message.NEW {
             client.cfg.sessionID = binary.BigEndian.Uint16(response.Data())
-            fmt.Printf("Created session %x\n", client.cfg.sessionID)
+            ui.Out("Created session %x\n", client.cfg.sessionID)
             client.runLoop()
-            return
+        } else {
+            err = fmt.Errorf("did not receive NEW response to NEWR")
+            errorhandling.Report(err, true)
         }
-        fmt.Println("did not receive NEW response")
     }
     return
 }

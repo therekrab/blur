@@ -55,6 +55,15 @@ func NewChat(data []byte) (msg Message, err error) {
     return
 }
 
+func NewServerChat(source []byte, data []byte) (msg Message, err error) {
+    msg, err = NewChat(data)
+    if err != nil {
+        return
+    }
+    msg = msg.PrependSource(source)
+    return
+}
+
 func NewIdent(idents [][]byte) (msg Message, err error) {
     data := make([]byte, 0)
     for _, ident := range idents {
@@ -118,3 +127,4 @@ func (msg *Message) PrependSource(ident []byte) (alteredMsg Message) {
     alteredMsg = NewMessage(alteredDsize, msg.mtype, alteredData)
     return
 }
+

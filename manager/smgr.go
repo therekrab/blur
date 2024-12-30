@@ -35,10 +35,8 @@ func (smgr *sessionManager) broadcast(msg message.Message, exclude []byte) {
     for conn, ident := range smgr.clients {
         if slices.Equal(ident, exclude) {
             // this is probably the sender.
-            fmt.Printf("skipping bouncing message to %s\n", ident)
             continue
         }
-        fmt.Printf("smgr: sending to %s\n", ident)
         err := msg.SendTo(conn)
         if err != nil {
             addr := conn.LocalAddr().String()

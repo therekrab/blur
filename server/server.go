@@ -50,14 +50,9 @@ func handleClient(conn net.Conn) {
     // Now we have "authenticated" the server.
     // Now the only MTYPEs that actually make sense are CHT(E) and IDENTR
     // We may now begin receiving standard communications
-    fmt.Printf("finished init for %s, ready for messages.\n", ident)
     for {
         msg, err := message.ReadMessage(conn)
         if err == io.EOF {
-            fmt.Printf(
-                "connection terminated with %s\n",
-                ident,
-            )
             return
         }
         if err != nil {
@@ -181,7 +176,7 @@ func identRoutine(conn net.Conn, sessionID uint16) (ident []byte, err error) {
 
 func introduce(sessionID uint16, ident []byte) (err error) {
     greeting := fmt.Sprintf("user '%s' has entered the session", ident)
-    msg, err := message.NewChat([]byte(greeting))
+    msg, err := message.NewServerChat([]byte("server"), []byte(greeting))
     if err != nil {
         return err
     }
@@ -191,7 +186,7 @@ func introduce(sessionID uint16, ident []byte) (err error) {
 
 func leave(sessionID uint16, ident []byte) {
     farewell := fmt.Sprintf("user '%s' has exited the session", ident)
-    msg, err := message.NewChat([]byte(farewell))
+    msg, err := message.NewServerChat([]byte("server"), []byte(farewell))
     if err != nil {
         errorhandling.Report(err, false)
         // I would do a sendError, but this is the function for when the user

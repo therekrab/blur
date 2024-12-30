@@ -78,8 +78,8 @@ func doJoin(addr string, sessionID uint16, sessionKey string, ident string) {
     }
 }
 
-func readInput(dst *string, msg string) {
-    fmt.Print(msg)
+func readInput(dst *string, prompt string) {
+    fmt.Print(prompt)
     rdr := bufio.NewReader(os.Stdin)
     res, err := rdr.ReadString('\n')
     if err != nil {

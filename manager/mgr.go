@@ -49,7 +49,6 @@ func (mgr *Manager) AddClient(
         return
     }
     smgr.addClient(conn, ident)
-    fmt.Printf("New client '%s' on session %x\n", ident, sessionID)
 }
 
 func (mgr *Manager) RemoveClient(
@@ -66,10 +65,8 @@ func (mgr *Manager) RemoveClient(
         return
     }
     smgr.removeClient(conn)
-    fmt.Printf("'%s' left session %x\n", ident, sessionID)
     if smgr.isEmpty() {
         delete(mgr.smgrs, sessionID)
-        fmt.Printf("Closed session %x.\n", sessionID)
     }
 }
 
@@ -132,7 +129,6 @@ func (mgr *Manager) Verify(
         ok = smgr.verify(sessionKeyHash)
         return ok, !ok
     }
-    fmt.Printf("bad session ID: %x\n", sessionID)
     return
 }
 

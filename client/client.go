@@ -34,7 +34,6 @@ func (client *Client) Close() {
     }
     client.conn.Close()
     client.active = false
-    fmt.Println("connection closed, goodbye")
     errorhandling.Exit()
 }
 
@@ -53,7 +52,6 @@ func (client *Client) runInputLoop() {
         line, err := rdr.ReadString('\n')
         // Check for ctrl-D EOF
         if err == io.EOF {
-            fmt.Println("closing connection")
             return
         }
         if err != nil {
@@ -112,15 +110,16 @@ func (client *Client) identRoutine() (err error) {
 func (client *Client) runOutputLoop() (err error) {
     defer client.Close()
     for client.isActive() {
-        fmt.Println("listening for message")
         var msg message.Message
         msg, err = message.ReadMessage(client.conn)
+        if !client.isActive() {
+            return
+        }
         if err != nil {
             errorhandling.Report(err, true)
             sender.SendError(client.conn)
             return
         }
-        fmt.Printf("handling message: %d\n", msg.MType())
         switch msg.MType() {
         case message.ERR:
             err = fmt.Errorf("received ERR msg")

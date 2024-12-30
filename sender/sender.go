@@ -12,7 +12,6 @@ import (
 // caller of sendError() already HAS an error - the reason for calling the
 // function. So we will never OVERRIDE errors, so we just handle it in here.
 func SendError(conn net.Conn) {
-    fmt.Println("sending ERR")
     errorMsg := message.NewMessage(0, message.ERR, nil)
     err := errorMsg.SendTo(conn)
     if err != nil {
@@ -21,7 +20,6 @@ func SendError(conn net.Conn) {
 }
 
 func SendReject(conn net.Conn, keyFailed bool) (err error) {
-    fmt.Println("sending reject")
     reason := make([]byte, 1)
     if keyFailed {
         reason[0] = 1
@@ -46,7 +44,6 @@ func SendNew(conn net.Conn, sessionID uint16) (err error) {
 }
 
 func SendNewR(conn net.Conn, sessionKeyHashed []byte) (err error) {
-    fmt.Printf("len(hashed key) = %d\n", len(sessionKeyHashed))
     newRMsg := message.NewMessage(
         uint16(len(sessionKeyHashed)),
         message.NEWR,

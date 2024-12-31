@@ -31,15 +31,11 @@ func (smgr *sessionManager) isEmpty() bool {
     return len(smgr.clients) == 0
 }
 
-func (smgr *sessionManager) broadcast(msg message.Message, exclude []byte) {
-    for conn, ident := range smgr.clients {
-        if slices.Equal(ident, exclude) {
-            // this is probably the sender.
-            continue
-        }
+func (smgr *sessionManager) broadcast(msg message.Message) {
+    for conn := range smgr.clients {
         err := msg.SendTo(conn)
         if err != nil {
-            addr := conn.LocalAddr().String()
+            addr := conn.RemoteAddr().String()
             err := fmt.Errorf("could not broadcast to %s: %s", addr, err)
             errorhandling.Report(err, false)
             // we don't return, because one bad message shouldn't signal

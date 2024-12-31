@@ -73,7 +73,6 @@ func (mgr *Manager) RemoveClient(
 func (mgr *Manager) Broadcast(
     sessionID uint16,
     msg message.Message,
-    exclude []byte,
 ) (err error) {
     mgr.mu.Lock()
     defer mgr.mu.Unlock()
@@ -82,7 +81,7 @@ func (mgr *Manager) Broadcast(
         err = fmt.Errorf("invalid sessionID for broadcast")
         return
     }
-    smgr.broadcast(msg, exclude)
+    smgr.broadcast(msg)
     return
 }
 

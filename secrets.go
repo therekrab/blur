@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"os"
 	"strconv"
 	"therekrab/secrets/client"
 	"therekrab/secrets/errorhandling"
@@ -11,10 +10,10 @@ import (
 )
 
 func main() {
-    port := flag.Uint("port", 4040, 
+    port := flag.Uint("port", 4040,
         "(server mode) Port to run server on.",
     )
-    serverFlag := flag.Bool("server", false, 
+    serverFlag := flag.Bool("server", false,
         "Toggle server mode.",
     )
     newFlag := flag.Bool("new", false,
@@ -25,39 +24,43 @@ func main() {
     )
     // Parse the flags
     flag.Parse()
-    var sessionIDHex string
-    var ident string
-    var sessionKey string
+    // Start the UI
     // Determine functionality
     if *serverFlag {
         server.RunServer(*port)
     } else {
-        err := ui.ReadInput(&sessionKey, "Session key: ")
+        // Setup UI
+        ui.Init()
+        done := make(chan error)
+        go ui.Run(done)
+        sessionKey, err := ui.ReadInput("Session key: ")
         if err != nil {
-            errorhandling.Report(err, true)
             errorhandling.Exit()
         }
-        err = ui.ReadInput(&ident, "ident: ")
+        ident, err := ui.ReadInput("ident: ")
         if err != nil {
-            errorhandling.Report(err, true)
             errorhandling.Exit()
         }
         if *newFlag {
             doNew(*addr, sessionKey, ident)
         } else {
-            err = ui.ReadInput(&sessionIDHex, "Session ID: ")
+            sessionIDHex, err := ui.ReadInput("Session ID: ")
             if err != nil {
-                errorhandling.Report(err, true)
                 errorhandling.Exit()
             }
             sessionID, err := parseSessionID(sessionIDHex)
             if err != nil {
                 errorhandling.Report(err, true)
-                errorhandling.Exit()
+            } else {
+                doJoin(*addr, sessionID, sessionKey, ident)
             }
-            doJoin(*addr, sessionID, sessionKey, ident)
+        }
+        err = <- done
+        if err != nil {
+            errorhandling.Report(err, true)
         }
     }
+    errorhandling.Exit()
 }
 
 func doNew(addr string, sessionKey string, ident string) {
@@ -69,8 +72,7 @@ func doNew(addr string, sessionKey string, ident string) {
     c := client.NewClient(addr, cfg)
     err = c.Run(addr)
     if err != nil {
-        // it's been reported, we just need to exit
-        os.Exit(1)
+        errorhandling.Report(err, true)
     }
 }
 
@@ -84,7 +86,7 @@ func doJoin(addr string, sessionID uint16, sessionKey string, ident string) {
     c := client.NewClient(addr, cfg)
     err = c.Run(addr)
     if err != nil {
-        os.Exit(1)
+        errorhandling.Report(err, true)
     }
 }
 

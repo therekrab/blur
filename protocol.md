@@ -71,21 +71,13 @@ be displayed to the user.
 This is identical in function to the `CHT` format, except it lets the client
 program know that the message is encrypted, and so they should decrypt it.
 
-### `ERR` (9)
-This message signals that an error has occured in the system managing the
-connection - not a user error. This would occur if a client attempts to run
-a request besides `JOIN?` or `NEW?` to start a communication. The data field
-for this message will contain a (non-encrypted) string that should provide
-debug information to help fix the problems.
-
 ## The protocol itself
 Upon establishing a connection, the client is responsible for initiating
 communication. The client will begin by sending a `JOIN?` or `NEW?` message,
 depending on the desired behavior.
 
 ### Creating a new session
-If a `NEW?` request is sent, the server will respond with either a `NEW`
-response (OK) or an `ERR` message (error, connection closed).
+If a `NEW?` request is sent, the server will respond with a `NEW` response.
 
 ### Joining a session
 If a `JOIN?` request is sent, the server will reply with either an `ACC`

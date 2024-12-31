@@ -12,5 +12,4 @@ type MType byte
     IDENT
     CHT
     CHTE
-    ERR
 )

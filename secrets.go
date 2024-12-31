@@ -1,22 +1,19 @@
 package main
 
 import (
-	"bufio"
 	"flag"
-	"fmt"
-	"os"
 	"strconv"
-	"strings"
 	"therekrab/secrets/client"
 	"therekrab/secrets/errorhandling"
 	"therekrab/secrets/server"
+	"therekrab/secrets/ui"
 )
 
 func main() {
-    port := flag.Uint("port", 4040, 
+    port := flag.Uint("port", 4040,
         "(server mode) Port to run server on.",
     )
-    serverFlag := flag.Bool("server", false, 
+    serverFlag := flag.Bool("server", false,
         "Toggle server mode.",
     )
     newFlag := flag.Bool("new", false,
@@ -27,27 +24,43 @@ func main() {
     )
     // Parse the flags
     flag.Parse()
-    var sessionIDHex string
-    var ident string
-    var sessionKey string
+    // Start the UI
     // Determine functionality
     if *serverFlag {
         server.RunServer(*port)
     } else {
-        readInput(&sessionKey, "Session key: ")
-        readInput(&ident, "ident: ")
+        // Setup UI
+        ui.Init()
+        done := make(chan error)
+        go ui.Run(done)
+        sessionKey, err := ui.ReadInput("Session key: ")
+        if err != nil {
+            errorhandling.Exit()
+        }
+        ident, err := ui.ReadInput("ident: ")
+        if err != nil {
+            errorhandling.Exit()
+        }
         if *newFlag {
             doNew(*addr, sessionKey, ident)
         } else {
-            readInput(&sessionIDHex, "Session ID: ")
+            sessionIDHex, err := ui.ReadInput("Session ID: ")
+            if err != nil {
+                errorhandling.Exit()
+            }
             sessionID, err := parseSessionID(sessionIDHex)
             if err != nil {
                 errorhandling.Report(err, true)
-                errorhandling.Exit()
+            } else {
+                doJoin(*addr, sessionID, sessionKey, ident)
             }
-            doJoin(*addr, sessionID, sessionKey, ident)
+        }
+        err = <- done
+        if err != nil {
+            errorhandling.Report(err, true)
         }
     }
+    errorhandling.Exit()
 }
 
 func doNew(addr string, sessionKey string, ident string) {
@@ -59,13 +72,12 @@ func doNew(addr string, sessionKey string, ident string) {
     c := client.NewClient(addr, cfg)
     err = c.Run(addr)
     if err != nil {
-        // it's been reported, we just need to exit
-        os.Exit(1)
+        errorhandling.Report(err, true)
     }
 }
 
 func doJoin(addr string, sessionID uint16, sessionKey string, ident string) {
-    fmt.Printf("Attempting to join session %x\n", sessionID)
+    ui.Out("Attempting to join session %x\n", sessionID)
     cfg, err := client.JoinSessionConfig(sessionID, sessionKey, ident)
     if err != nil {
         errorhandling.Report(err, true)
@@ -74,26 +86,8 @@ func doJoin(addr string, sessionID uint16, sessionKey string, ident string) {
     c := client.NewClient(addr, cfg)
     err = c.Run(addr)
     if err != nil {
-        os.Exit(1)
-    }
-}
-
-func readInput(dst *string, prompt string) {
-    fmt.Print(prompt)
-    rdr := bufio.NewReader(os.Stdin)
-    res, err := rdr.ReadString('\n')
-    if err != nil {
-        err = fmt.Errorf("could not read from stdin")
         errorhandling.Report(err, true)
-        errorhandling.Exit()
     }
-    *dst = strings.TrimSpace(res)
-    if *dst == "" {
-        err = fmt.Errorf("blank input not allowed")
-        errorhandling.Report(err, true)
-        errorhandling.Exit()
-    }
-    return
 }
 
 func parseSessionID(sessionHex string) (sessionID uint16, err error) {

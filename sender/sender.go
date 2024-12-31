@@ -2,22 +2,9 @@ package sender
 
 import (
 	"encoding/binary"
-	"fmt"
 	"net"
-	"therekrab/secrets/errorhandling"
 	"therekrab/secrets/message"
 )
-
-// The only reason that the error is handled inside of send is because the
-// caller of sendError() already HAS an error - the reason for calling the
-// function. So we will never OVERRIDE errors, so we just handle it in here.
-func SendError(conn net.Conn) {
-    errorMsg := message.NewMessage(0, message.ERR, nil)
-    err := errorMsg.SendTo(conn)
-    if err != nil {
-        errorhandling.Report(err, false)
-    }
-}
 
 func SendReject(conn net.Conn, keyFailed bool) (err error) {
     reason := make([]byte, 1)

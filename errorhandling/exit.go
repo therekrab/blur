@@ -1,17 +1,18 @@
 package errorhandling
 
 import (
-	"fmt"
 	"os"
+	"therekrab/secrets/ui"
 )
 
 func Exit() {
+    // Regular system exits
     failed := hadError()
     if failed {
-        fmt.Println("Exiting with failure status.")
+        ui.Cleanup()
         os.Exit(1)
     } else {
-        fmt.Println("Exiting regularly.")
+        ui.Cleanup()
         os.Exit(0)
     }
 }

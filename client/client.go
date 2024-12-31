@@ -1,16 +1,14 @@
 package client
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"net"
-	"os"
 	"sync"
 	"therekrab/secrets/errorhandling"
 	"therekrab/secrets/message"
 	"therekrab/secrets/sender"
+	"therekrab/secrets/ui"
 )
 
 type Client struct {
@@ -34,7 +32,6 @@ func (client *Client) Close() {
     }
     client.conn.Close()
     client.active = false
-    errorhandling.Exit()
 }
 
 func (client *Client) isActive() bool {
@@ -47,23 +44,27 @@ func (client *Client) runInputLoop() {
     defer client.Close()
     for client.isActive() {
         // get input from the user
-        fmt.Print(">> ")
-        rdr := bufio.NewReader(os.Stdin)
-        line, err := rdr.ReadString('\n')
-        // Check for ctrl-D EOF
-        if err == io.EOF {
-            return
-        }
+        line, err := ui.ReadInput(string(client.cfg.ident))
         if err != nil {
-            errorhandling.Report(err, true)
-            sender.SendError(client.conn)
-            return
+            client.Close()
+            errorhandling.Exit()
+        }
+        if line == ".exit" {
+            // the client would like to leave
+            client.Close()
+            errorhandling.Exit()
+        }
+        if line == ".help" {
+            ui.Out("==== HELP (Your eyes only) ====\n")
+            ui.Out("\tType .help to see this message again.\n")
+            ui.Out("\tType .exit to leave the chat.\n")
+            ui.Out("\t<Esc> will also quit.\n")
+            continue // noo dont send that
         }
         // Build and send the chat
         encryptedData, err := client.cfg.encrypt(line)
         if err != nil {
             errorhandling.Report(err, true)
-            sender.SendError(client.conn)
             return
         }
         sender.SendChatE(client.conn, encryptedData)
@@ -99,11 +100,11 @@ func (client *Client) identRoutine() (err error) {
         return
     }
     
-    fmt.Println("=== ACTIVE USERS: ===")
+    ui.OutBold("=== ACTIVE USERS: ===\n")
     for _, reponseIdent := range reponseIdents {
-        fmt.Printf("\t'%s'\n", reponseIdent)
+        ui.Out("\t'%s'\n", reponseIdent)
     }
-    fmt.Println("===== END USERS =====")
+    ui.OutBold("===== END USERS =====\n")
     return
 }
 
@@ -112,24 +113,19 @@ func (client *Client) runOutputLoop() (err error) {
     for client.isActive() {
         var msg message.Message
         msg, err = message.ReadMessage(client.conn)
+        // The last line was blocking, so we may actually not be active anymore
         if !client.isActive() {
             return
         }
         if err != nil {
             errorhandling.Report(err, true)
-            sender.SendError(client.conn)
             return
         }
         switch msg.MType() {
-        case message.ERR:
-            err = fmt.Errorf("received ERR msg")
-            errorhandling.Report(err, true)
-            return
         case message.IDENTR:
             err = client.identRoutine()
             if err != nil {
                 errorhandling.Report(err, true)
-                sender.SendError(client.conn)
                 return
             }
             continue
@@ -141,10 +137,9 @@ func (client *Client) runOutputLoop() (err error) {
             source, cht, err = message.ParseCht(msg.Data())
             if err != nil {
                 errorhandling.Report(err, true)
-                sender.SendError(client.conn)
                 return
             }
-            fmt.Printf("'%s' : %s\n", source, cht)
+            ui.Out("'%s' : %s\n", source, cht)
             continue
         case message.CHTE:
             var (
@@ -154,23 +149,20 @@ func (client *Client) runOutputLoop() (err error) {
             source, chte, err = message.ParseCht(msg.Data())
             if err != nil {
                 errorhandling.Report(err, true)
-                sender.SendError(client.conn)
                 return
             }
             var cht []byte
             cht, err = client.cfg.decrypt(chte)
             if err != nil {
                 errorhandling.Report(err, true)
-                sender.SendError(client.conn)
                 return
             }
-            fmt.Printf("'%s' : %s\n", source, string(cht))
+            ui.Out("'%s' : %s\n", source, string(cht))
             continue
         }
         // invalid type received
         err = fmt.Errorf("invalid type received: %d", msg.MType())
         errorhandling.Report(err, true)
-        sender.SendError(client.conn)
     }
     return
 }
@@ -178,7 +170,6 @@ func (client *Client) runOutputLoop() (err error) {
 func (client *Client) runLoop() {
     go client.runOutputLoop()
     client.runInputLoop()
-    errorhandling.Exit()
 }
 
 func (client *Client) Run(addr string) (err error) {
@@ -197,20 +188,19 @@ func (client *Client) Run(addr string) (err error) {
         )
         if err != nil {
             errorhandling.Report(err, true)
-            sender.SendError(client.conn)
             return
         }
         var response message.Message
         response, err = message.ReadMessage(client.conn)
         if err != nil {
             errorhandling.Report(err, true)
-            sender.SendError(client.conn)
             return
         }
         switch response.MType() {
         case message.ACC:
-            fmt.Printf("Joined session %x\n", client.cfg.sessionID)
+            ui.Out("Joined session %x\n", client.cfg.sessionID)
             client.runLoop()
+            return
         case message.REJ:
             if response.Data()[0] == 0 {
                 err = fmt.Errorf("invalid sessionID")
@@ -220,31 +210,31 @@ func (client *Client) Run(addr string) (err error) {
             errorhandling.Report(err, true)
             return
         }
-        err = fmt.Errorf("invalid response received from server")
+        err = fmt.Errorf(
+            "invalid response received from server (%d)",
+            response.MType(),
+        )
         errorhandling.Report(err, true)
-        return
     } else {
         err = sender.SendNewR(client.conn, client.cfg.HashedKey())
         if err != nil {
             errorhandling.Report(err, true)
-            sender.SendError(client.conn)
             return
         }
         var response message.Message
         response, err = message.ReadMessage(client.conn)
         if err != nil {
             errorhandling.Report(err, true)
-            sender.SendError(client.conn)
             return
         }
-        switch response.MType() {
-        case message.NEW:
+        if response.MType() == message.NEW {
             client.cfg.sessionID = binary.BigEndian.Uint16(response.Data())
-            fmt.Printf("Created session %x\n", client.cfg.sessionID)
+            ui.Out("Created session %x\n", client.cfg.sessionID)
             client.runLoop()
-            return
+        } else {
+            err = fmt.Errorf("Failed creating new session")
+            errorhandling.Report(err, true)
         }
-        fmt.Println("did not receive NEW response")
     }
     return
 }

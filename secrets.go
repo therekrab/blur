@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"strconv"
-	"therekrab/secrets/client"
-	"therekrab/secrets/errorhandling"
-	"therekrab/secrets/server"
-	"therekrab/secrets/ui"
+	"github.com/therekrab/blur/client"
+	"github.com/therekrab/blur/errorhandling"
+	"github.com/therekrab/blur/server"
+	"github.com/therekrab/blur/ui"
 )
 
 func main() {

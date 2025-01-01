@@ -8,11 +8,11 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"therekrab/secrets/errorhandling"
-	"therekrab/secrets/manager"
-	"therekrab/secrets/message"
-	"therekrab/secrets/sender"
-	"therekrab/secrets/ui"
+	"github.com/therekrab/blur/errorhandling"
+	"github.com/therekrab/blur/manager"
+	"github.com/therekrab/blur/message"
+	"github.com/therekrab/blur/sender"
+	"github.com/therekrab/blur/ui"
 )
 
 func RunServer(port uint) (err error) {

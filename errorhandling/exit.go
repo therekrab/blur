@@ -2,7 +2,7 @@ package errorhandling
 
 import (
 	"os"
-	"therekrab/secrets/ui"
+    "github.com/therekrab/blur/ui"
 )
 
 func Exit() {

@@ -1,4 +1,4 @@
-module therekrab/secrets
+module github.com/therekrab/blur
 
 go 1.23.4
 

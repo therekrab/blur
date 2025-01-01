@@ -3,7 +3,7 @@ package sender
 import (
 	"encoding/binary"
 	"net"
-	"therekrab/secrets/message"
+	"github.com/therekrab/blur/message"
 )
 
 func SendReject(conn net.Conn, keyFailed bool) (err error) {

@@ -12,9 +12,9 @@ run a secure server. Even though the server cannot read messages, it still can
 keep a record of connections. So if have to rely on full anonimity, why not
 run the server yourself? And it's easy too. Blur has a built in server mode
 that enables it to run as a server rather than a client.
-* Portable
-Blur is just a single binary once compiled. This means that after compilation,
-blur can exist as a single file and leave no other trace on the system.
+* Portable. Blur is just a single binary once compiled. This means that after
+compilation, blur can exist as a single file and leave no other trace on the
+system.
 * No trace on client computer. Blur exists in memory only. When you leave Blur,
 anything that was on your screen is lost. There are no files that store chats.
 No vulnerabilites to fear. When you exit the program, your computer will have

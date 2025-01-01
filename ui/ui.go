@@ -25,10 +25,20 @@ type userInterface struct {
 var ui *userInterface
 var once sync.Once
 
+var errorColor tcell.Color
+
 func configStyle() {
+    if _, nocolor := os.LookupEnv("NOCOLOR"); nocolor {
+        tview.Styles.PrimaryTextColor = tcell.ColorWhite
+        tview.Styles.ContrastBackgroundColor = tcell.ColorGray
+        tview.Styles.SecondaryTextColor = tcell.ColorWhiteSmoke
+        errorColor = tcell.ColorWhite
+        return
+    }
     tview.Styles.PrimitiveBackgroundColor = tcell.NewHexColor(0x282e2e)
     tview.Styles.ContrastBackgroundColor = tcell.NewHexColor(0x5a6c6c)
     tview.Styles.SecondaryTextColor = tcell.NewHexColor(0xabc8be)
+    errorColor = tcell.ColorRed
 }
 
 func runUI() (err error) {
@@ -81,7 +91,7 @@ func Init() {
     // Error reporting: TextView
     ui.errorReport = tview.NewTextView().
         SetDynamicColors(true).
-        SetTextColor(tcell.NewHexColor(0xe45050))
+        SetTextColor(errorColor)
     ui.errorReport.SetChangedFunc(func() {
         ui.errorReport.ScrollToEnd()
         ui.app.Draw()
@@ -107,8 +117,13 @@ func Run(done chan error) {
 }
 
 func Log(format string, a... any) {
+    blurDir, ok := os.LookupEnv("BLURDIR")
+    if !ok {
+        blurDir = "."
+    }
+    filepath := fmt.Sprintf("%s/blur.log", blurDir)
     file, err := os.OpenFile(
-        "blur.log",
+        filepath,
         os.O_APPEND|os.O_CREATE|os.O_WRONLY,
         0644,
     )
@@ -167,6 +182,16 @@ func ReadInput(prompt string) (str string, err error) {
     return
 }
 
+func ReadSecureInput(prompt string) (str string, err error) {
+    if ui == nil || !ui.active {
+        err = fmt.Errorf("UI not active")
+        return
+    }
+    ui.input.SetMaskCharacter('*')
+    str, err = ReadInput(prompt)
+    ui.input.SetMaskCharacter(0)
+    return
+}
 
 func Cleanup() {
     if ui != nil && ui.active {

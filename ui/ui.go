@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -162,12 +163,19 @@ func OutBold(format string, a... any) {
 
 func Err(format string, a... any) {
     if ui == nil || !ui.active {
+        fmt.Println("hi")
         fmt.Fprintf(os.Stderr, format, a...)
         return
     }
     ui.mu.Lock()
     defer ui.mu.Unlock()
     ui.errorReport.SetText(tview.Escape(fmt.Sprintf(format, a...)))
+    go func() {
+        time.Sleep(3 * time.Second)
+        ui.mu.Lock()
+        ui.errorReport.SetText("")
+        ui.mu.Unlock()
+    }()
 }
 
 func ReadInput(prompt string) (str string, err error) {
@@ -177,6 +185,10 @@ func ReadInput(prompt string) (str string, err error) {
     }
     ui.input.SetLabel(prompt + " >> ")
     text := <- ui.inputChan
+    if !ui.active {
+        err = fmt.Errorf("User quit")
+        return
+    }
     ui.input.SetLabel("")
     str = strings.TrimSpace(text)
     return
@@ -196,5 +208,6 @@ func ReadSecureInput(prompt string) (str string, err error) {
 func Cleanup() {
     if ui != nil && ui.active {
         ui.app.Stop()
+        ui.active = false
     }
 }

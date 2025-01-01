@@ -35,15 +35,17 @@ func main() {
         go ui.Run(done)
         var sessionID uint16
         if !*newFlag {
-            sessionIDHex, err := ui.ReadInput("Session ID: ")
-            if err != nil {
-                errorhandling.Exit()
-            }
-            sessionID, err = parseSessionID(sessionIDHex)
-            if err != nil {
-                errorhandling.Report(err, true)
-                <-done
-                errorhandling.Exit()
+            for {
+                sessionIDHex, err := ui.ReadInput("Session ID: ")
+                if err != nil {
+                    errorhandling.Exit()
+                }
+                sessionID, err = parseSessionID(sessionIDHex)
+                if err != nil {
+                    errorhandling.Report(err, false)
+                    continue
+                }
+                break
             }
         }
         sessionKey, err := ui.ReadSecureInput("Session key: ")

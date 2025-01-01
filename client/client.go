@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net"
 	"sync"
-	"therekrab/secrets/errorhandling"
-	"therekrab/secrets/message"
-	"therekrab/secrets/sender"
-	"therekrab/secrets/ui"
+	"github.com/therekrab/blur/errorhandling"
+	"github.com/therekrab/blur/message"
+	"github.com/therekrab/blur/sender"
+	"github.com/therekrab/blur/ui"
 )
 
 type Client struct {

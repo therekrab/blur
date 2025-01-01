@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 	"slices"
-	"therekrab/secrets/errorhandling"
-	"therekrab/secrets/message"
+	"github.com/therekrab/blur/errorhandling"
+	"github.com/therekrab/blur/message"
 )
 
 type sessionManager struct {

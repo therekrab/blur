@@ -2,7 +2,7 @@ package client
 
 import (
 	"crypto/cipher"
-	"therekrab/secrets/secure"
+	"github.com/therekrab/blur/secure"
 )
 
 type ClientConfig struct {

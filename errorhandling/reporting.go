@@ -1,7 +1,7 @@
 package errorhandling
 
 import (
-	"therekrab/secrets/ui"
+	"github.com/therekrab/blur/ui"
 )
 
 func Report(err error, fatal bool) {

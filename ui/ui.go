@@ -108,7 +108,7 @@ func Run(done chan error) {
 
 func Log(format string, a... any) {
     file, err := os.OpenFile(
-        "secrets.log",
+        "blur.log",
         os.O_APPEND|os.O_CREATE|os.O_WRONLY,
         0644,
     )

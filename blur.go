@@ -33,7 +33,20 @@ func main() {
         ui.Init()
         done := make(chan error)
         go ui.Run(done)
-        sessionKey, err := ui.ReadInput("Session key: ")
+        var sessionID uint16
+        if !*newFlag {
+            sessionIDHex, err := ui.ReadInput("Session ID: ")
+            if err != nil {
+                errorhandling.Exit()
+            }
+            sessionID, err = parseSessionID(sessionIDHex)
+            if err != nil {
+                errorhandling.Report(err, true)
+                <-done
+                errorhandling.Exit()
+            }
+        }
+        sessionKey, err := ui.ReadSecureInput("Session key: ")
         if err != nil {
             errorhandling.Exit()
         }
@@ -44,16 +57,7 @@ func main() {
         if *newFlag {
             doNew(*addr, sessionKey, ident)
         } else {
-            sessionIDHex, err := ui.ReadInput("Session ID: ")
-            if err != nil {
-                errorhandling.Exit()
-            }
-            sessionID, err := parseSessionID(sessionIDHex)
-            if err != nil {
-                errorhandling.Report(err, true)
-            } else {
-                doJoin(*addr, sessionID, sessionKey, ident)
-            }
+            doJoin(*addr, sessionID, sessionKey, ident)
         }
         err = <- done
         if err != nil {

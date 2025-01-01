@@ -27,7 +27,6 @@ var once sync.Once
 
 func configStyle() {
     tview.Styles.PrimitiveBackgroundColor = tcell.NewHexColor(0x282e2e)
-    // i dont know what to do with this yet, but: 0xabc8be
     tview.Styles.ContrastBackgroundColor = tcell.NewHexColor(0x5a6c6c)
     tview.Styles.SecondaryTextColor = tcell.NewHexColor(0xabc8be)
 }

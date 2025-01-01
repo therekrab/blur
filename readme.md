@@ -1,4 +1,6 @@
-# blur
+![Blur](logo.png)
+
+
 Blur is a communications software for those who value security above all else.
 
 Here are some of its features:

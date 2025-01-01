@@ -41,6 +41,8 @@ The `-port` flag specifies what port to listen on, if applicable. Default is
 
 The server automatically keeps logs of connections and sessions in the
 `blur.log` file in the current directory the application was ran in.
+Alternatively, if the `BLURDIR` environment variable is set, the log file will
+be written to that directory.
 
 ## Client
 The following flags are important to know as a client.
@@ -58,3 +60,5 @@ when you run `blur -new` and get your session ID, you must keep that client
 open to continue the session under that ID. To minimize server memory usage,
 an empty session is automatically trashed. So keep your sessions open.
 
+## Misc
+Blur supports the [NO_COLOR](https://no-color.org) environment variable.

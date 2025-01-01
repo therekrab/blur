@@ -29,7 +29,7 @@ var once sync.Once
 var errorColor tcell.Color
 
 func configStyle() {
-    if _, nocolor := os.LookupEnv("NO_COLOR"); nocolor {
+    if nocolor := os.Getenv("NO_COLOR"); nocolor != "" {
         tview.Styles.PrimaryTextColor = tcell.ColorWhite
         tview.Styles.ContrastBackgroundColor = tcell.ColorGray
         tview.Styles.SecondaryTextColor = tcell.ColorWhiteSmoke

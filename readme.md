@@ -9,7 +9,7 @@ uses AES to encrypt and decrypt all messages between users on the client side.
 This means that even the server itself cannot read the messages you send on it.
 * Local servers. Blur is built for those that cannot rely on anybody else to
 run a secure server. Even though the server cannot read messages, it still can
-keep a record of connections. So if have to rely on full anonimity, why not
+keep a record of connections. So if you have to rely on full anonimity, why not
 run the server yourself? And it's easy too. Blur has a built in server mode
 that enables it to run as a server rather than a client.
 * Portable. Blur is just a single binary once compiled. This means that after

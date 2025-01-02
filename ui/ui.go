@@ -24,23 +24,6 @@ type userInterface struct {
 }
 
 var ui *userInterface
-var once sync.Once
-
-var errorColor tcell.Color
-
-func configStyle() {
-    if nocolor := os.Getenv("NO_COLOR"); nocolor != "" {
-        tview.Styles.PrimaryTextColor = tcell.ColorWhite
-        tview.Styles.ContrastBackgroundColor = tcell.ColorGray
-        tview.Styles.SecondaryTextColor = tcell.ColorWhiteSmoke
-        errorColor = tcell.ColorWhite
-        return
-    }
-    tview.Styles.PrimitiveBackgroundColor = tcell.NewHexColor(0x282e2e)
-    tview.Styles.ContrastBackgroundColor = tcell.NewHexColor(0x5a6c6c)
-    tview.Styles.SecondaryTextColor = tcell.NewHexColor(0xabc8be)
-    errorColor = tcell.ColorRed
-}
 
 func runUI() (err error) {
     err = ui.app.SetRoot(ui.flexOuter, true).Run()
@@ -50,12 +33,17 @@ func runUI() (err error) {
     return
 }
 
+func setupColors() {
+    ui.errorReport.SetTextColor(theme().error)
+    ui.output.SetTitleColor(theme().altText)
+}
+
 func Init() {
+    apply() // setup colors
     ui = &userInterface{}
     ui.inputChan = make(chan string, 1)
     ui.mu.Lock()
     defer ui.mu.Unlock()
-    configStyle()
     // Setup the application
     ui.app = tview.NewApplication().
         SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -91,8 +79,7 @@ func Init() {
         })
     // Error reporting: TextView
     ui.errorReport = tview.NewTextView().
-        SetDynamicColors(true).
-        SetTextColor(errorColor)
+        SetDynamicColors(true)
     ui.errorReport.SetChangedFunc(func() {
         ui.errorReport.ScrollToEnd()
         ui.app.Draw()
@@ -109,6 +96,7 @@ func Init() {
         AddItem(tview.NewBox(), 0, 1, false).
         AddItem(ui.flex, 0, 8, true).
         AddItem(tview.NewBox(), 0, 1, false)
+    setupColors()
     ui.active = true
 }
 
@@ -163,7 +151,6 @@ func OutBold(format string, a... any) {
 
 func Err(format string, a... any) {
     if ui == nil || !ui.active {
-        fmt.Println("hi")
         fmt.Fprintf(os.Stderr, format, a...)
         return
     }

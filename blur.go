@@ -35,7 +35,7 @@ func main() {
         "Toggle server mode.",
     )
     newFlag := flag.Bool("new", false,
-        "(client mode) Create a new session, rather than connecting to a prexisting one.",
+        "(client mode) Create a new session",
     )
     addr := flag.String("addr", "127.0.0.1:4040",
         "(client mode) The server address to connect to.",
@@ -129,7 +129,7 @@ func loadConfig() (cfg blurConfig, err error) {
     path := fmt.Sprintf("%s/.blur/blur.toml", home)
     if _, err = toml.DecodeFile(path, &cfg); err != nil {
         if os.IsNotExist(err) {
-            err = fmt.Errorf("could not find blur.toml")
+            err = fmt.Errorf("could not find blur.toml at ~/.blur/blur.toml")
         }
         return
     }

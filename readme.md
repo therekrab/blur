@@ -1,4 +1,4 @@
-![Blur](logo.png)
+![Blur](imgs/logo.png)
 
 
 Blur is a communications software for those who value security above all else.
@@ -12,14 +12,7 @@ run a secure server. Even though the server cannot read messages, it still can
 keep a record of connections. So if you have to rely on full anonimity, why not
 run the server yourself? And it's easy too. Blur has a built in server mode
 that enables it to run as a server rather than a client.
-* Portable. Blur is just a single binary once compiled. This means that after
-compilation, blur can exist as a single file and leave no other trace on the
-system.
-* No trace on client computer. Blur exists in memory only. When you leave Blur,
-anything that was on your screen is lost. There are no files that store chats.
-No vulnerabilites to fear. When you exit the program, your computer will have
-no idea what you did.
-* TUI interface. There already are so many E2EE softwares out there, but Blur
+* TUI interface. There already are so many E2EE softwares out there, but blur
 is different. It runs completely in the terminal. I think this makes it cooler.
 
 ## Installation
@@ -60,5 +53,31 @@ when you run `blur -new` and get your session ID, you must keep that client
 open to continue the session under that ID. To minimize server memory usage,
 an empty session is automatically trashed. So keep your sessions open.
 
-## Misc
-Blur supports the [NO_COLOR](https://no-color.org) environment variable.
+## Configuration
+Blur stores all configuration files at `~/.config/blur`.
+All configuration files are stored using the `TOML` format.
+This makes editing them pretty easy.
+The main configuration file, `blur.toml` has the following key/value pairs:
+| key | value |
+| --- | --- |
+| `theme` | The name of the theme to set up. Default value is `mono` |
+
+### Themes
+The themes are stored at `~/.config/blur/themes`.
+To add a new theme, simply add a new `.toml` file to the directory, then set
+the file name (without `.toml`) to the theme value in `config.toml`.
+
+So far, these are the themes:
+
+#### mono
+This is the default theme for blur. It is monochrome, hence the name.
+![mono](imgs/mono.png)
+
+#### ocean
+![ocean](imgs/ocean.png)
+
+#### retro
+![retro](imgs/retro.png)
+
+#### matrix
+![matrix](imgs/matrix.png)

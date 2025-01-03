@@ -1,0 +1,5 @@
+text = "lime"
+altText = "palegreen"
+bg = "#000000"
+altBg = "#2c2c2c"
+error = "yellowgreen"

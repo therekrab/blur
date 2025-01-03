@@ -2,7 +2,10 @@ package main
 
 import (
 	"flag"
+	"os"
 	"strconv"
+
+	"github.com/therekrab/blur/cfg"
 	"github.com/therekrab/blur/client"
 	"github.com/therekrab/blur/errorhandling"
 	"github.com/therekrab/blur/server"
@@ -10,6 +13,20 @@ import (
 )
 
 func main() {
+    userCfg, err := cfg.LoadConfig()
+    if os.IsNotExist(err) {
+        err = cfg.InitSystem()
+        userCfg, _ = cfg.LoadConfig()
+    }
+    if err != nil {
+        errorhandling.Report(err, true)
+        errorhandling.Exit()
+    }
+    err = ui.SetTheme(userCfg.Theme)
+    if err != nil {
+        errorhandling.Report(err, true)
+        errorhandling.Exit()
+    }
     port := flag.Uint("port", 4040,
         "(server mode) Port to run server on.",
     )
@@ -17,7 +34,7 @@ func main() {
         "Toggle server mode.",
     )
     newFlag := flag.Bool("new", false,
-        "(client mode) Create a new session, rather than connecting to a prexisting one.",
+        "(client mode) Create a new session",
     )
     addr := flag.String("addr", "127.0.0.1:4040",
         "(client mode) The server address to connect to.",

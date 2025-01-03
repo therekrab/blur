@@ -1,0 +1,5 @@
+text = "#525252"
+altText = "black"
+bg = "#c0c0c0"
+altBg = "#a0a0a0"
+error = "black"

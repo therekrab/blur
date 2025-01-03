@@ -12,8 +12,20 @@ import (
 //go:embed default
 var defaultDir embed.FS
 
+type ServerCfg struct {
+    Port uint `toml:"port"`
+    Quiet bool `toml:"quiet"`
+    Log string `toml:"log"`
+}
+
+type ClientCfg struct {
+    Addr string `toml:"addr"`
+}
+
 type BlurCfg struct {
     Theme string `toml:"theme"`
+    Server ServerCfg `toml:"server"`
+    Client ClientCfg `toml:"client"`
 }
 
 func home() (homeDir string, err error) {

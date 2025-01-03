@@ -1,1 +1,14 @@
 theme = "mono"
+
+# Server configuration
+[server]
+port = 4040 # listens on this port
+# To disable any output, set this to true
+quiet = false
+log = "blur.log" # filepath of log
+# To disable logging, just delete the line above.
+
+# Client configuration
+[client]
+# This is just the default server, and is overwritten by -addr
+addr = "127.0.0.1:4040"

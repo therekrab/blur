@@ -20,13 +20,13 @@ func RunServer(port uint) (err error) {
     ln, err := net.Listen("tcp", addr)
     // handle any SIGINTS to gracefully shut down
     sigs := make(chan os.Signal, 1)
-    signal.Notify(sigs, syscall.SIGINT)
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGKILL)
     active := true
     activeMu := new(sync.Mutex)
     go func() {
         <- sigs
         ui.Out("\nExiting...\n")
-        ui.Log("[ SERVER ] Received SIGINT, exiting\n")
+        ui.Log("[ SERVER ] Received exit signal, exiting\n")
         activeMu.Lock()
         active = false
         activeMu.Unlock()

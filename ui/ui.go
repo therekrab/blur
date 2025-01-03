@@ -26,6 +26,7 @@ type userInterface struct {
 var ui *userInterface
 
 var quiet bool
+var quietLog bool
 
 func runUI() (err error) {
     err = ui.app.SetRoot(ui.flexOuter, true).Run()
@@ -108,6 +109,9 @@ func Run(done chan error) {
 }
 
 func Log(format string, a... any) {
+    if quietLog {
+        return
+    }
     blurDir, ok := os.LookupEnv("BLURDIR")
     if !ok {
         blurDir = "."
@@ -128,10 +132,10 @@ func Log(format string, a... any) {
 }
 
 func Out(format string, a... any) {
+    if quiet {
+        return
+    }
     if ui == nil || !ui.active {
-        if quiet {
-            return
-        }
         fmt.Printf(format, a...)
         return
     }
@@ -143,10 +147,10 @@ func Out(format string, a... any) {
 }
 
 func OutBold(format string, a... any) {
+    if quiet {
+        return
+    }
     if ui == nil || !ui.active {
-        if quiet {
-            return
-        }
         fmt.Printf(format, a...)
         return
     }
@@ -158,10 +162,10 @@ func OutBold(format string, a... any) {
 }
 
 func Err(format string, a... any) {
+    if quiet {
+        return
+    }
     if ui == nil || !ui.active {
-        if quiet {
-            return
-        }
         fmt.Fprintf(os.Stderr, format, a...)
         return
     }
@@ -212,4 +216,8 @@ func Cleanup() {
 
 func Quiet() {
     quiet = true
+}
+
+func QuietLog() {
+    quietLog = true
 }

@@ -36,6 +36,9 @@ func main() {
     quietFlag := flag.Bool("quiet", false,
         "Tell the server to not output anything, not even errors",
     )
+    logFlag := flag.Bool("log", true,
+        "Tell the server to log data. Default is true.",
+    )
     newFlag := flag.Bool("new", false,
         "(client mode) Create a new session",
     )
@@ -49,6 +52,9 @@ func main() {
     if *serverFlag {
         if *quietFlag {
             ui.Quiet()
+        }
+        if !*logFlag {
+            ui.QuietLog()
         }
         server.RunServer(*port)
     } else {

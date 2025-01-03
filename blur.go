@@ -33,6 +33,9 @@ func main() {
     serverFlag := flag.Bool("server", false,
         "Toggle server mode.",
     )
+    quietFlag := flag.Bool("quiet", false,
+        "Tell the server to not output anything, not even errors",
+    )
     newFlag := flag.Bool("new", false,
         "(client mode) Create a new session",
     )
@@ -44,6 +47,9 @@ func main() {
     // Start the UI
     // Determine functionality
     if *serverFlag {
+        if *quietFlag {
+            ui.Quiet()
+        }
         server.RunServer(*port)
     } else {
         // Setup UI

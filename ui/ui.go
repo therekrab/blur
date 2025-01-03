@@ -25,8 +25,9 @@ type userInterface struct {
 
 var ui *userInterface
 
+var logPath string
+
 var quiet bool
-var quietLog bool
 
 func runUI() (err error) {
     err = ui.app.SetRoot(ui.flexOuter, true).Run()
@@ -109,16 +110,8 @@ func Run(done chan error) {
 }
 
 func Log(format string, a... any) {
-    if quietLog {
-        return
-    }
-    blurDir, ok := os.LookupEnv("BLURDIR")
-    if !ok {
-        blurDir = "."
-    }
-    filepath := fmt.Sprintf("%s/blur.log", blurDir)
     file, err := os.OpenFile(
-        filepath,
+        logPath,
         os.O_APPEND|os.O_CREATE|os.O_WRONLY,
         0644,
     )
@@ -218,6 +211,11 @@ func Quiet() {
     quiet = true
 }
 
-func QuietLog() {
-    quietLog = true
+func SetLog(logfile string) {
+    if logfile == "" {
+        logPath = "/dev/null"
+        return
+    }
+    logPath = logfile
 }
+

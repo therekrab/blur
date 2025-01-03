@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -27,36 +28,33 @@ func main() {
         errorhandling.Report(err, true)
         errorhandling.Exit()
     }
-    port := flag.Uint("port", 4040,
-        "(server mode) Port to run server on.",
-    )
     serverFlag := flag.Bool("server", false,
         "Toggle server mode.",
-    )
-    quietFlag := flag.Bool("quiet", false,
-        "Tell the server to not output anything, not even errors",
-    )
-    logFlag := flag.Bool("log", true,
-        "Tell the server to log data. Default is true.",
     )
     newFlag := flag.Bool("new", false,
         "(client mode) Create a new session",
     )
-    addr := flag.String("addr", "127.0.0.1:4040",
-        "(client mode) The server address to connect to.",
+    addr := flag.String("addr", userCfg.Client.Addr,
+        "(client mode) The remote address to connect to.",
     )
+    oldUsage := flag.CommandLine.Usage
+    flag.CommandLine.Usage = func() {
+        oldUsage()
+        fmt.Fprintln(
+            os.Stderr,
+            "Note: more values can be set in ~/.config/blur/config.toml",
+        )
+    }
     // Parse the flags
     flag.Parse()
     // Start the UI
     // Determine functionality
     if *serverFlag {
-        if *quietFlag {
+        if userCfg.Server.Quiet {
             ui.Quiet()
         }
-        if !*logFlag {
-            ui.QuietLog()
-        }
-        server.RunServer(*port)
+        ui.SetLog(userCfg.Server.Log)
+        server.RunServer(userCfg.Server.Port)
     } else {
         // Setup UI
         ui.Init()

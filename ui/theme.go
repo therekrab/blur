@@ -12,6 +12,8 @@ import (
 	"github.com/rivo/tview"
 )
 
+const DefaultThemeName string = "mono"
+
 var hexRegex *regexp.Regexp = regexp.MustCompile(
     `^#[\da-f]{6}$`,
 )
@@ -43,7 +45,7 @@ func theme() *UITheme {
 }
 
 func defaultTheme() UITheme {
-    def, err := loadTheme("mono")
+    def, err := loadTheme(DefaultThemeName)
     if err != nil {
         // Use term default values
         def = UITheme{}
@@ -78,7 +80,7 @@ func loadTheme(themeName string) (theme UITheme, err error) {
         err = fmt.Errorf("Could not detect HOME directory")
         return
     }
-    themeFilepath := fmt.Sprintf("%s/.blur/themes/%s.toml", home, themeName)
+    themeFilepath := fmt.Sprintf("%s/.config/blur/themes/%s.toml", home, themeName)
     var conf UIConfig
     if _, err = toml.DecodeFile(themeFilepath, &conf); err != nil {
         if os.IsNotExist(err) {

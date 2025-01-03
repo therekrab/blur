@@ -2,28 +2,27 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 
-	"github.com/BurntSushi/toml"
+	"github.com/therekrab/blur/cfg"
 	"github.com/therekrab/blur/client"
 	"github.com/therekrab/blur/errorhandling"
 	"github.com/therekrab/blur/server"
 	"github.com/therekrab/blur/ui"
 )
 
-type blurConfig struct {
-    Theme string
-}
-
 func main() {
-    cfg, err := loadConfig()
+    userCfg, err := cfg.LoadConfig()
+    if os.IsNotExist(err) {
+        err = cfg.InitSystem()
+        userCfg, _ = cfg.LoadConfig()
+    }
     if err != nil {
         errorhandling.Report(err, true)
         errorhandling.Exit()
     }
-    err = ui.SetTheme(cfg.Theme)
+    err = ui.SetTheme(userCfg.Theme)
     if err != nil {
         errorhandling.Report(err, true)
         errorhandling.Exit()
@@ -117,21 +116,5 @@ func doJoin(addr string, sessionID uint16, sessionKey string, ident string) {
 func parseSessionID(sessionHex string) (sessionID uint16, err error) {
     sessionIDBig, err :=  strconv.ParseUint(sessionHex, 16, 16)
     sessionID = uint16(sessionIDBig)
-    return
-}
-
-func loadConfig() (cfg blurConfig, err error) {
-    home, ok := os.LookupEnv("HOME")
-    if !ok {
-        err = fmt.Errorf("Could not find $HOME environment variable")
-        return
-    }
-    path := fmt.Sprintf("%s/.blur/blur.toml", home)
-    if _, err = toml.DecodeFile(path, &cfg); err != nil {
-        if os.IsNotExist(err) {
-            err = fmt.Errorf("could not find blur.toml at ~/.blur/blur.toml")
-        }
-        return
-    }
     return
 }

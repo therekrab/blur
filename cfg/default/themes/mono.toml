@@ -1,0 +1,5 @@
+text = "white"
+altText = "#d0d0d0"
+bg = "default"
+altBg = "#404040"
+error = "white"

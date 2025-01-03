@@ -57,10 +57,24 @@ an empty session is automatically trashed. So keep your sessions open.
 Blur stores all configuration files at `~/.config/blur`.
 All configuration files are stored using the `TOML` format.
 This makes editing them pretty easy.
-The main configuration file, `blur.toml` has the following key/value pairs:
-| key | value |
-| --- | --- |
-| `theme` | The name of the theme to set up. Default value is `mono` |
+The main configuration file, `config.toml`, can configure default options for
+blur's client/server CLI tool.
+
+```toml
+# Set theme
+theme = "mono"
+
+# Server configuration
+[server]
+port = 4040
+quiet = true # suppress output
+log = "blur.log"
+
+# Client configuration
+[client]
+addr = "10.0.0.4:4321" # Default remote address if -addr is not supplied via
+                       # command line
+```
 
 ### Themes
 The themes are stored at `~/.config/blur/themes`.
